@@ -81,7 +81,7 @@ body{background:var(--bg);color:var(--fg);font-family:var(--body);overflow:hidde
 <!-- 2 A RUA (vídeo) -->
 <section class="slide" data-steps="1" data-hook="video" data-notes="CARLA: [Clique: começa o vídeo] Esta rua resume o trabalho. O nosso armazém envelhece e, nas contas, perde 9.000 euros por ano. Mas a zona valoriza. Ao fim de cinco anos, nas contas vale 455.000 euros e no mercado 650.000. A pergunta é: como é que a revalorização e a depreciação mudam o valor nas contas e a forma como as lemos? Fizemos isto com as normas do SNC, estudos científicos e um caso numérico.">
   <div class="ttl">Mais valor no mercado, menos valor nas contas</div>
-  <video class="clip" src="01_A_rua.mp4" muted playsinline preload="auto" style="left:200px;top:190px;width:1200px;height:675px;border-radius:18px"></video>
+  <video class="clip" src="01_A_rua.mp4" muted playsinline preload="none" style="left:200px;top:190px;width:1200px;height:675px;border-radius:18px"></video>
   <div class="who">Carla</div>
 </section>
 
@@ -162,23 +162,23 @@ body{background:var(--bg);color:var(--fg);font-family:var(--body);overflow:hidde
 
 <!-- 8 MESA (5 vídeos, um por clique) -->
 <section class="slide" data-steps="5" data-hook="video" data-notes="PEDRO: Imaginem quatro autores à mesa. [Clique 1] Aboody e colegas, com empresas britânicas entre 1983 e 1995: as revalorizações anteciparam melhores resultados e fluxos de caixa, embora menos nas empresas endividadas. [Clique 2] Pinto, nos fundos imobiliários portugueses: os gestores ajustavam as avaliações para evitar descidas de valor, sobretudo em dificuldades. [Clique 3] Bae e colegas, 6.277 observações de empresas coreanas entre 2007 e 2017: revalorizar reduziu o risco de quedas bruscas das ações, mas nas empresas em dificuldades aconteceu o contrário. [Clique 4] Pimenta, do lado do perito: a depreciação física é muitas vezes estimada com pouco rigor, e propõe ligá-la aos custos de construção. [Clique 5] Juntando os quatro: nenhum modelo é sempre melhor; depende dos motivos da gestão e da qualidade da avaliação.">
-  <video class="clip full" src="02-1_Mesa_Aboody.mp4" muted playsinline preload="auto"></video>
-  <video class="clip full" src="02-2_Mesa_Pinto.mp4" muted playsinline preload="auto"></video>
-  <video class="clip full" src="02-3_Mesa_Bae.mp4" muted playsinline preload="auto"></video>
-  <video class="clip full" src="02-4_Mesa_Pimenta.mp4" muted playsinline preload="auto"></video>
-  <video class="clip full" src="02-5_Mesa_final.mp4" muted playsinline preload="auto"></video>
+  <video class="clip full" src="02-1_Mesa_Aboody.mp4" muted playsinline preload="none"></video>
+  <video class="clip full" src="02-2_Mesa_Pinto.mp4" muted playsinline preload="none"></video>
+  <video class="clip full" src="02-3_Mesa_Bae.mp4" muted playsinline preload="none"></video>
+  <video class="clip full" src="02-4_Mesa_Pimenta.mp4" muted playsinline preload="none"></video>
+  <video class="clip full" src="02-5_Mesa_final.mp4" muted playsinline preload="none"></video>
   <div class="who">Pedro</div>
 </section>
 
 <!-- 9 ESCADA (vídeo) -->
 <section class="slide" data-steps="1" data-hook="video" data-notes="PEDRO: [Clique: começa o vídeo] O caso, adaptado do Exercício 2 do Caderno 2: uma sede comprada por 500.000 euros, 100.000 de terreno e 400.000 de edifício, com 40 anos de vida útil e 40.000 de valor residual. Deprecia 9.000 euros por ano. Ao fim de 5 anos está nas contas por 455.000. O avaliador diz 650.000. A diferença, 195.000 euros, é o excedente de revalorização: vai para o capital próprio, não para o lucro, porque não houve venda nem entrou dinheiro.">
-  <video class="clip full" src="03_Escada_do_valor.mp4" muted playsinline preload="auto"></video>
+  <video class="clip full" src="03_Escada_do_valor.mp4" muted playsinline preload="none"></video>
   <div class="who">Pedro · adaptado do Caderno 2, Exercício 2</div>
 </section>
 
 <!-- 10 CAIXAS (vídeo) -->
 <section class="slide" data-steps="1" data-hook="video" data-notes="PEDRO: [Clique: começa o vídeo] Para onde vão os 195.000? Como o Fisco não aceita a depreciação a mais, uma parte fica reservada para impostos futuros: 48.750 euros de impostos diferidos, com taxa ilustrativa de 25%. O capital próprio sobe 146.250. A autonomia financeira passa de 20% para cerca de 29%, e o dinheiro que entrou foi zero. Daqui para a frente a depreciação sobe para 13.143 euros por ano, e o excedente do edifício vai passando para resultados transitados com o uso. No fim fica só o do terreno.">
-  <video class="clip full" src="04_Duas_caixas.mp4" muted playsinline preload="auto"></video>
+  <video class="clip full" src="04_Duas_caixas.mp4" muted playsinline preload="none"></video>
   <div class="who">Pedro</div>
 </section>
 
@@ -257,10 +257,20 @@ body{background:var(--bg);color:var(--fg);font-family:var(--body);overflow:hidde
     }
   };
 
+  // carrega só os vídeos do slide atual e do seguinte (evita descarregar tudo de uma vez)
+  function warm(i){
+    [i,i+1,i+2].forEach(function(j){
+      if(!slides[j]) return;
+      slides[j].querySelectorAll('video').forEach(function(v){
+        if(!v._warm){ v._warm=true; v.preload='auto'; try{ v.load(); }catch(e){} }
+      });
+    });
+  }
   function steps(i){ return +(slides[i].getAttribute('data-steps')||0); }
   function show(i,s,instant){
     var el=slides[i];
     s=Math.max(0,Math.min(steps(i),s));
+    warm(i);
     if(instant) el.classList.add('noanim');
     slides.forEach(function(x,j){
       x.classList.toggle('active',j===i);
