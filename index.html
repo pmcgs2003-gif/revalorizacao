@@ -1,0 +1,318 @@
+<!doctype html><html lang="pt"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head><body><title>Revalorização e depreciação de imóveis</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700;900&family=Merriweather:wght@700;900&display=swap">
+<style>
+/* Palco 16:9 fixo (1600x900) escalado ao ecrã. Fotografias e vídeos; cada clique avança um passo e o vídeo fica parado na última imagem. */
+:root{
+  --bg:#14202B; --card:#1E2E3B; --slate:#4A6072;
+  --gold:#E0A33A; --goldbg:#3A2E14; --goldlt:#FAE8C7;
+  --fg:#FFFFFF; --lt:#C9D3DD; --muted:#9FB0BF; --red:#D9604A;
+  --display:"Merriweather", Georgia, "Times New Roman", serif;
+  --body:"Lato", "Segoe UI", Arial, sans-serif;
+  color-scheme:dark;
+}
+html,body{height:100%}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);overflow:hidden}
+#app{position:fixed;inset:0;background:var(--bg);cursor:pointer;user-select:none}
+#stage{position:absolute;left:50%;top:50%;width:1600px;height:900px;transform:translate(-50%,-50%) scale(var(--k,1));overflow:hidden;background:var(--bg)}
+.slide{position:absolute;inset:0;opacity:0;visibility:hidden;transition:opacity .6s ease,visibility 0s linear .6s}
+.slide.active{opacity:1;visibility:visible;transition:opacity .6s ease}
+.slide.noanim,.slide.noanim *{transition:none!important}
+.abs{position:absolute}
+.ttl{position:absolute;left:100px;top:58px;width:1400px;font-family:var(--display);font-weight:900;font-size:50px;line-height:1.15;text-wrap:balance}
+.who{position:absolute;left:100px;top:846px;font-size:18px;color:var(--muted);letter-spacing:.04em;z-index:3}
+.photo{position:absolute;inset:0;background-size:cover;background-position:center}
+.shade{position:absolute;inset:0;background:linear-gradient(90deg,rgba(20,32,43,.94) 0%,rgba(20,32,43,.72) 50%,rgba(20,32,43,.25) 100%)}
+.shade.b{background:linear-gradient(180deg,rgba(20,32,43,.35) 0%,rgba(20,32,43,.75) 60%,rgba(20,32,43,.96) 100%)}
+.eyebrow{font-size:22px;letter-spacing:.18em;color:var(--gold);font-weight:700}
+.card{background:var(--card);border-radius:22px}
+.goldcard{background:var(--goldbg);border-radius:22px}
+.gold{color:var(--gold)} .muted{color:var(--muted)}
+.rv{opacity:0;transform:translateY(24px);transition:opacity .7s ease,transform .7s cubic-bezier(.2,.7,.2,1)}
+.s1 .rv[data-at="1"],.s2 .rv[data-at="2"],.s3 .rv[data-at="3"],.s4 .rv[data-at="4"],.s5 .rv[data-at="5"]{opacity:1;transform:none}
+.draw{stroke-dasharray:1;stroke-dashoffset:1;transition:stroke-dashoffset 1.6s ease}
+.s1 .draw[data-at="1"],.s2 .draw[data-at="2"],.s3 .draw[data-at="3"],.s4 .draw[data-at="4"]{stroke-dashoffset:0}
+
+/* vídeos */
+.clip{position:absolute;object-fit:contain;background:var(--bg);opacity:0}
+.clip.show{opacity:1}
+.clip.full{left:0;top:0;width:1600px;height:900px}
+
+/* slide 3: fotografias */
+.pcard{position:absolute;top:200px;width:440px;height:590px;overflow:hidden;border-radius:22px;background:var(--card)}
+.pcard .img{height:330px;background-size:cover;background-position:center}
+.pcard .tx{padding:26px 30px}
+.pcard h3{font-family:var(--display);font-size:44px;margin:0}
+.pcard p{font-size:24px;color:var(--lt);margin:10px 0 14px;line-height:1.35}
+.pcard .norm{font-size:23px;color:var(--gold);font-weight:700}
+
+/* slide 11 */
+.step{position:absolute;top:250px;width:300px;display:flex;flex-direction:column;align-items:center;gap:22px;text-align:center}
+.step .c{width:130px;height:130px;border-radius:50%;background:var(--goldbg);border:4px solid var(--gold);display:flex;align-items:center;justify-content:center;font-family:var(--display);font-weight:900;font-size:56px;color:var(--gold)}
+.step p{margin:0;font-size:28px;line-height:1.3}
+
+/* HUD */
+#hud{position:fixed;right:max(16px,env(safe-area-inset-right,0px));bottom:calc(14px + env(safe-area-inset-bottom,0px));display:flex;gap:8px;align-items:center;opacity:.2;transition:opacity .3s;z-index:20}
+#hud:hover,#hud:focus-within{opacity:1}
+#hud button{background:#1E2E3B;color:var(--lt);border:1px solid #2E4252;border-radius:8px;font:700 14px var(--body);padding:7px 11px;cursor:pointer}
+#hud button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+#pos{font:700 14px var(--body);color:var(--muted);min-width:56px;text-align:center;font-variant-numeric:tabular-nums}
+#prog{position:fixed;left:0;bottom:0;height:3px;background:var(--gold);width:0;transition:width .4s;z-index:20;opacity:.6}
+#notes{position:fixed;left:max(16px,env(safe-area-inset-left,0px));right:max(16px,env(safe-area-inset-right,0px));bottom:calc(60px + env(safe-area-inset-bottom,0px));max-width:980px;margin:0 auto;background:rgba(15,25,34,.96);border:1px solid #2E4252;border-radius:14px;padding:18px 22px;font-size:17px;line-height:1.55;color:var(--lt);z-index:21;cursor:default}
+#notes b{color:var(--gold)}
+#hint{position:fixed;left:50%;top:calc(18px + env(safe-area-inset-top,0px));transform:translateX(-50%);background:rgba(15,25,34,.92);border:1px solid #2E4252;color:var(--lt);font-size:14px;padding:8px 14px;border-radius:999px;z-index:22;transition:opacity .8s;white-space:nowrap;max-width:calc(100% - 32px);overflow:hidden;text-overflow:ellipsis}
+@media (prefers-reduced-motion: reduce){ .rv,.draw{transition-duration:.01s!important} }
+</style>
+
+<div id="app">
+<div id="stage">
+
+<!-- 1 CAPA -->
+<section class="slide" data-steps="0" data-notes="CARLA: Bom dia. O nosso trabalho é sobre revalorização e depreciação de imóveis: como é que um imóvel pode valer mais no mercado e, ao mesmo tempo, continuar a perder valor nas contas da empresa.">
+  <div class="photo" style="background-image:url('capa.jpg')"></div>
+  <div class="shade"></div>
+  <div class="abs eyebrow" style="left:100px;top:130px">CONTABILIDADE APLICADA AO IMOBILIÁRIO</div>
+  <div class="abs" style="left:100px;top:190px;width:1050px;font-family:var(--display);font-weight:900;font-size:80px;line-height:1.1">Revalorização e depreciação de imóveis</div>
+  <div class="abs" style="left:100px;top:420px;width:820px;font-size:32px;line-height:1.4;color:var(--lt)">Um imóvel pode valer mais no mercado e continuar a perder valor nas contas.</div>
+  <div class="abs" style="left:100px;top:600px;font-size:28px;font-weight:700">Carla Duarte <span class="muted" style="font-weight:400">&nbsp;|&nbsp;</span> Pedro Silva</div>
+  <div class="abs" style="left:100px;top:646px;font-size:22px;color:var(--muted)">Pós-Graduação em Avaliação e Gestão na Atividade Imobiliária · ISCAC · Novembro de 2026</div>
+</section>
+
+<!-- 2 A RUA (vídeo) -->
+<section class="slide" data-steps="1" data-hook="video" data-notes="CARLA: [Clique: começa o vídeo] Esta rua resume o trabalho. O nosso armazém envelhece e, nas contas, perde 9.000 euros por ano. Mas a zona valoriza. Ao fim de cinco anos, nas contas vale 455.000 euros e no mercado 650.000. A pergunta é: como é que a revalorização e a depreciação mudam o valor nas contas e a forma como as lemos? Fizemos isto com as normas do SNC, estudos científicos e um caso numérico.">
+  <div class="ttl">Mais valor no mercado, menos valor nas contas</div>
+  <video class="clip" src="01_A_rua.mp4" muted playsinline preload="auto" style="left:200px;top:190px;width:1200px;height:675px;border-radius:18px"></video>
+  <div class="who">Carla</div>
+</section>
+
+<!-- 3 FINALIDADE -->
+<section class="slide" data-steps="4" data-notes="CARLA: Primeiro, a finalidade. [Clique] Se a empresa usa o imóvel, como sede, é ativo fixo tangível, NCRF 7, e deprecia-se. [Clique] Se o arrenda, é propriedade de investimento, NCRF 11. [Clique] Se o constrói ou compra para vender, é inventário, NCRF 18. O trabalho foca o primeiro caso. [Clique] O terreno separa-se sempre do edifício, porque o terreno não se deprecia.">
+  <div class="ttl">A finalidade do imóvel decide a norma</div>
+  <div class="pcard rv" data-at="1" style="left:100px"><div class="img" style="background-image:url('usar.jpg')"></div><div class="tx"><h3>Usar</h3><p>Sede, escritórios, armazém próprio</p><div class="norm">NCRF 7 · ativo fixo tangível</div></div></div>
+  <div class="pcard rv" data-at="2" style="left:580px"><div class="img" style="background-image:url('arrendar.jpg')"></div><div class="tx"><h3>Arrendar</h3><p>Rendas ou valorização do capital</p><div class="norm">NCRF 11 · propriedade de investimento</div></div></div>
+  <div class="pcard rv" data-at="3" style="left:1060px"><div class="img" style="background-image:url('vender.jpg')"></div><div class="tx"><h3>Vender</h3><p>Construir ou comprar para revenda</p><div class="norm">NCRF 18 · inventário</div></div></div>
+  <div class="abs rv" data-at="4" style="left:100px;top:806px;width:1400px;text-align:center;font-size:27px;color:var(--goldlt)">O terreno separa-se sempre do edifício: <b class="gold">o terreno não se deprecia.</b></div>
+  <div class="who" style="top:856px">Carla</div>
+</section>
+
+<!-- 4 RETA vs CURVA -->
+<section class="slide" data-steps="3" data-notes="CARLA: A depreciação contabilística distribui o custo do edifício pela vida útil. [Clique] Na linha reta, o mesmo valor todos os anos. Não mede o preço de mercado e continua mesmo que o mercado suba (NCRF 7, § 52). [Clique] Já a degradação física, a que o perito avalia, é lenta no início e acelera no fim, e cada componente tem a sua vida útil. [Clique] Pimenta, Pereira e Silva discutem os modelos usados pelos peritos, como o de Ross-Heidecke.">
+  <div class="ttl">Contas em reta, edifício em curva</div>
+  <svg class="abs" style="left:90px;top:190px;width:900px;height:560px" viewBox="0 0 900 560" aria-label="Gráfico: depreciação em linha reta e degradação física em curva">
+    <defs><linearGradient id="gA" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#E0A33A" stop-opacity=".35"/><stop offset="1" stop-color="#E0A33A" stop-opacity="0"/></linearGradient></defs>
+    <line x1="80" y1="30" x2="80" y2="480" stroke="#3A5062" stroke-width="3"/>
+    <line x1="80" y1="480" x2="870" y2="480" stroke="#3A5062" stroke-width="3"/>
+    <text x="92" y="22" style="font:700 22px var(--body);fill:var(--muted)">Valor do edifício</text>
+    <text x="870" y="520" text-anchor="end" style="font:700 22px var(--body);fill:var(--muted)">Tempo →</text>
+    <path class="rv" data-at="2" d="M80,60 C520,72 740,190 860,440 L860,480 L80,480 Z" fill="url(#gA)"/>
+    <path class="draw" data-at="1" pathLength="1" d="M80,60 L860,440" stroke="#7FB3D5" stroke-width="7" fill="none" stroke-linecap="round"/>
+    <path class="draw" data-at="2" pathLength="1" d="M80,60 C520,72 740,190 860,440" stroke="var(--gold)" stroke-width="7" fill="none" stroke-linecap="round"/>
+  </svg>
+  <div class="card abs rv" data-at="1" style="left:1040px;top:220px;width:470px;padding:26px 30px">
+    <div style="display:flex;gap:16px;align-items:center"><span style="width:44px;height:7px;background:#7FB3D5;border-radius:4px"></span><b style="font-size:30px">Contabilidade</b></div>
+    <div style="font-size:24px;color:var(--lt);margin:8px 0 0 60px">O mesmo valor todos os anos</div>
+  </div>
+  <div class="card abs rv" data-at="2" style="left:1040px;top:390px;width:470px;padding:26px 30px">
+    <div style="display:flex;gap:16px;align-items:center"><span style="width:44px;height:7px;background:var(--gold);border-radius:4px"></span><b class="gold" style="font-size:30px">Degradação física</b></div>
+    <div style="font-size:24px;color:var(--lt);margin:8px 0 0 60px">Lenta no início, rápida no fim</div>
+  </div>
+  <div class="goldcard abs rv" data-at="3" style="left:1040px;top:560px;width:470px;padding:26px 30px;font-size:24px;line-height:1.4;color:var(--goldlt)">O perito mede a degradação real. A contabilidade distribui o custo.</div>
+  <div class="who">Carla · NCRF 7, § 52</div>
+</section>
+
+<!-- 5 DOIS MODELOS -->
+<section class="slide" data-steps="2" data-notes="CARLA: Depois do reconhecimento, a empresa escolhe um de dois modelos, para toda a classe de ativos. [Clique] No modelo do custo, o imóvel fica pelo custo menos as depreciações: nunca sobe. [Clique] No modelo de revalorização, fica pelo justo valor dado por um avaliador qualificado e independente (§ 32), e pode subir ou descer. Revaloriza-se sempre que a diferença for material: todos os anos se o mercado mexe muito, de 3 em 3 a 5 em 5 anos se mexe pouco (§ 34).">
+  <div class="ttl">Dois modelos, uma escolha</div>
+  <div class="card abs rv" data-at="1" style="left:100px;top:200px;width:680px;height:580px;padding:44px">
+    <div style="font-family:var(--display);font-weight:900;font-size:42px">Modelo do custo</div>
+    <svg viewBox="0 0 600 170" style="width:100%;height:170px;margin:26px 0" aria-hidden="true"><line x1="0" y1="160" x2="600" y2="160" stroke="#3A5062" stroke-width="3"/><path class="draw" data-at="1" pathLength="1" d="M10,30 L590,140" stroke="#7FB3D5" stroke-width="7" fill="none" stroke-linecap="round"/></svg>
+    <div style="font-size:28px;line-height:1.7;color:var(--lt)">Fica no custo, menos depreciações<br>Só desce<br>Sem avaliações periódicas</div>
+  </div>
+  <div class="goldcard abs rv" data-at="2" style="left:820px;top:200px;width:680px;height:580px;padding:44px">
+    <div class="gold" style="font-family:var(--display);font-weight:900;font-size:42px">Modelo de revalorização</div>
+    <svg viewBox="0 0 600 170" style="width:100%;height:170px;margin:26px 0" aria-hidden="true"><line x1="0" y1="160" x2="600" y2="160" stroke="#5A4A2A" stroke-width="3"/><path class="draw" data-at="2" pathLength="1" d="M10,90 L200,120 L200,40 L400,70 L400,20 L590,50" stroke="var(--gold)" stroke-width="7" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <div style="font-size:28px;line-height:1.7;color:var(--goldlt)">Justo valor dado pelo avaliador<br>Sobe e desce<br>Nova avaliação a cada 1 a 5 anos</div>
+  </div>
+  <div class="who">Carla · NCRF 7, §§ 29 a 41</div>
+</section>
+
+<!-- 6 IMPARIDADE -->
+<section class="slide" data-steps="2" data-notes="CARLA: Não confundir com imparidade. [Clique] A depreciação é o desgaste normal, todos os anos. [Clique] A imparidade é uma perda extra, quando o valor nas contas fica acima do que se consegue recuperar, por exemplo por danos, queda do mercado ou mudança de uso (NCRF 12). Um edifício pode ter as duas. Passo agora ao Pedro.">
+  <div class="photo" style="right:auto;width:700px;background-image:url('imparidade.jpg')"></div>
+  <div class="abs" style="left:560px;top:0;width:140px;height:900px;background:linear-gradient(90deg,rgba(20,32,43,0),var(--bg))"></div>
+  <div class="abs" style="left:780px;top:90px;width:720px;font-family:var(--display);font-weight:900;font-size:50px;line-height:1.15">Depreciação não é imparidade</div>
+  <div class="card abs rv" data-at="1" style="left:780px;top:290px;width:720px;padding:30px 34px">
+    <div style="font-size:32px;font-weight:900">Depreciação</div>
+    <div style="font-size:25px;color:var(--lt);margin-top:8px;line-height:1.4">O desgaste normal, todos os anos</div>
+  </div>
+  <div class="abs rv" data-at="2" style="left:780px;top:470px;width:720px;padding:30px 34px;border-radius:22px;background:#3A1F1A">
+    <div style="font-size:32px;font-weight:900;color:#F2A08F">Imparidade · NCRF 12</div>
+    <div style="font-size:25px;color:#F6D3CB;margin-top:8px;line-height:1.4">Uma perda súbita, além do desgaste normal: danos, queda do mercado, mudança de uso</div>
+  </div>
+  <div class="who" style="left:780px">Carla</div>
+</section>
+
+<!-- 7 SEPARADOR -->
+<section class="slide" data-steps="0" data-notes="PEDRO: Obrigado, Carla. Vou mostrar o que dizem os estudos e o que acontece num caso com números.">
+  <div class="photo" style="background-image:url('separador.jpg')"></div>
+  <div class="shade"></div>
+  <div class="abs" style="left:100px;top:320px;font-family:var(--display);font-weight:900;font-size:80px;line-height:1.1">A evidência e o caso</div>
+  <div class="abs" style="left:100px;top:440px;font-size:32px;color:var(--gold);font-weight:700;letter-spacing:.06em">Pedro</div>
+</section>
+
+<!-- 8 MESA (5 vídeos, um por clique) -->
+<section class="slide" data-steps="5" data-hook="video" data-notes="PEDRO: Imaginem quatro autores à mesa. [Clique 1] Aboody e colegas, com empresas britânicas entre 1983 e 1995: as revalorizações anteciparam melhores resultados e fluxos de caixa, embora menos nas empresas endividadas. [Clique 2] Pinto, nos fundos imobiliários portugueses: os gestores ajustavam as avaliações para evitar descidas de valor, sobretudo em dificuldades. [Clique 3] Bae e colegas, 6.277 observações de empresas coreanas entre 2007 e 2017: revalorizar reduziu o risco de quedas bruscas das ações, mas nas empresas em dificuldades aconteceu o contrário. [Clique 4] Pimenta, do lado do perito: a depreciação física é muitas vezes estimada com pouco rigor, e propõe ligá-la aos custos de construção. [Clique 5] Juntando os quatro: nenhum modelo é sempre melhor; depende dos motivos da gestão e da qualidade da avaliação.">
+  <video class="clip full" src="02-1_Mesa_Aboody.mp4" muted playsinline preload="auto"></video>
+  <video class="clip full" src="02-2_Mesa_Pinto.mp4" muted playsinline preload="auto"></video>
+  <video class="clip full" src="02-3_Mesa_Bae.mp4" muted playsinline preload="auto"></video>
+  <video class="clip full" src="02-4_Mesa_Pimenta.mp4" muted playsinline preload="auto"></video>
+  <video class="clip full" src="02-5_Mesa_final.mp4" muted playsinline preload="auto"></video>
+  <div class="who">Pedro</div>
+</section>
+
+<!-- 9 ESCADA (vídeo) -->
+<section class="slide" data-steps="1" data-hook="video" data-notes="PEDRO: [Clique: começa o vídeo] O caso, adaptado do Exercício 2 do Caderno 2: uma sede comprada por 500.000 euros, 100.000 de terreno e 400.000 de edifício, com 40 anos de vida útil e 40.000 de valor residual. Deprecia 9.000 euros por ano. Ao fim de 5 anos está nas contas por 455.000. O avaliador diz 650.000. A diferença, 195.000 euros, é o excedente de revalorização: vai para o capital próprio, não para o lucro, porque não houve venda nem entrou dinheiro.">
+  <video class="clip full" src="03_Escada_do_valor.mp4" muted playsinline preload="auto"></video>
+  <div class="who">Pedro · adaptado do Caderno 2, Exercício 2</div>
+</section>
+
+<!-- 10 CAIXAS (vídeo) -->
+<section class="slide" data-steps="1" data-hook="video" data-notes="PEDRO: [Clique: começa o vídeo] Para onde vão os 195.000? Como o Fisco não aceita a depreciação a mais, uma parte fica reservada para impostos futuros: 48.750 euros de impostos diferidos, com taxa ilustrativa de 25%. O capital próprio sobe 146.250. A autonomia financeira passa de 20% para cerca de 29%, e o dinheiro que entrou foi zero. Daqui para a frente a depreciação sobe para 13.143 euros por ano, e o excedente do edifício vai passando para resultados transitados com o uso. No fim fica só o do terreno.">
+  <video class="clip full" src="04_Duas_caixas.mp4" muted playsinline preload="auto"></video>
+  <div class="who">Pedro</div>
+</section>
+
+<!-- 11 PERITO -->
+<section class="slide" data-steps="5" data-notes="PEDRO: É aqui que entramos nós, como peritos. A contabilidade precisa do nosso relatório: [Clique] o justo valor à data, [Clique] o terreno separado do edifício, [Clique] a vida útil que resta e o valor residual, [Clique] e tudo fundamentado por um avaliador independente. [Clique] E o anexo às contas tem de dizer quem avaliou e com que pressupostos.">
+  <div class="ttl">O relatório do perito sustenta o valor nas contas</div>
+  <svg class="abs" style="left:0;top:0;width:1600px;height:900px;pointer-events:none" viewBox="0 0 1600 900" aria-hidden="true">
+    <path class="draw" data-at="4" pathLength="1" d="M250,315 L1350,315" stroke="#5A4A2A" stroke-width="4" fill="none"/>
+  </svg>
+  <div class="step rv" data-at="1" style="left:100px"><div class="c">1</div><p>Justo valor<br>à data</p></div>
+  <div class="step rv" data-at="2" style="left:466px"><div class="c">2</div><p>Terreno separado<br>do edifício</p></div>
+  <div class="step rv" data-at="3" style="left:833px"><div class="c">3</div><p>Vida útil e<br>valor residual</p></div>
+  <div class="step rv" data-at="4" style="left:1200px"><div class="c">4</div><p>Avaliador<br>independente</p></div>
+  <div class="card abs rv" data-at="5" style="left:200px;top:640px;width:1200px;padding:28px 36px;font-size:26px;line-height:1.4;color:var(--lt);text-align:center">No anexo às contas: data, avaliador independente, métodos e pressupostos <span class="gold">(NCRF 7, § 32)</span></div>
+  <div class="who">Pedro</div>
+</section>
+
+<!-- 12 CONCLUSÃO -->
+<section class="slide" data-steps="3" data-notes="PEDRO (ou os dois): [Clique] Em resumo: revalorizar melhora o balanço, mas não traz dinheiro e aumenta a depreciação futura. [Clique] A qualidade dessa informação depende da avaliação, e por isso do trabalho do perito. [Clique] Obrigado.">
+  <div class="photo" style="background-image:url('conclusao.jpg')"></div>
+  <div class="shade"></div>
+  <div class="abs rv" data-at="1" style="left:100px;top:180px;width:1150px;font-family:var(--display);font-weight:900;font-size:58px;line-height:1.2">Revalorizar melhora o balanço, mas não gera dinheiro.</div>
+  <div class="abs rv" data-at="2" style="left:100px;top:380px;width:1150px;font-family:var(--display);font-weight:900;font-size:58px;line-height:1.2;color:var(--gold)">Tudo depende da qualidade da avaliação.</div>
+  <div class="abs rv" data-at="3" style="left:100px;top:620px;font-size:46px;font-weight:900;letter-spacing:.04em">Obrigado</div>
+</section>
+
+</div>
+</div>
+
+<div id="hint">Clique, espaço ou → para avançar · ← recuar · F ecrã inteiro · N notas</div>
+<div id="notes" hidden></div>
+<div id="hud">
+  <button id="bPrev" type="button" aria-label="Passo anterior">←</button>
+  <span id="pos">1 / 12</span>
+  <button id="bNext" type="button" aria-label="Passo seguinte">→</button>
+  <button id="bNotes" type="button">Notas</button>
+  <button id="bFull" type="button">Ecrã inteiro</button>
+</div>
+<div id="prog"></div>
+
+<script>
+(function(){
+  var stage=document.getElementById('stage');
+  var slides=[].slice.call(document.querySelectorAll('.slide'));
+  var si=0, st=0;
+
+  function fit(){ stage.style.setProperty('--k',Math.min(window.innerWidth/1600, window.innerHeight/900)); }
+  window.addEventListener('resize',fit); fit();
+
+  function seek(v,t){ try{ v.currentTime=t; }catch(e){} }
+  function atEnd(v){ if(isFinite(v.duration)&&v.duration>0) seek(v,Math.max(0,v.duration-0.05)); else v.addEventListener('loadedmetadata',function f(){ v.removeEventListener('loadedmetadata',f); seek(v,Math.max(0,v.duration-0.05)); }); }
+
+  // Cada vídeo toca uma vez e fica parado na última imagem (sem loop, sem ecrã preto).
+  var hooks={
+    video:function(el,s,instant){
+      var vids=[].slice.call(el.querySelectorAll('video'));
+      vids.forEach(function(v){ v.pause(); });
+      if(s===0){
+        vids.forEach(function(v,i){ v.classList.toggle('show',i===0); seek(v,0); });
+        return;
+      }
+      var cur=vids[s-1];
+      if(instant){
+        vids.forEach(function(v,i){ v.classList.toggle('show',i===s-1); });
+        atEnd(cur);
+        return;
+      }
+      // o vídeo anterior fica visível até o novo começar, para não haver salto
+      seek(cur,0);
+      var go=function(){
+        vids.forEach(function(v,i){ if(v!==cur) v.classList.remove('show'); });
+        cur.classList.add('show');
+      };
+      cur.addEventListener('playing',function f(){ cur.removeEventListener('playing',f); go(); });
+      var p=cur.play(); if(p&&p.catch) p.catch(function(){ go(); });
+    }
+  };
+
+  function steps(i){ return +(slides[i].getAttribute('data-steps')||0); }
+  function show(i,s,instant){
+    var el=slides[i];
+    s=Math.max(0,Math.min(steps(i),s));
+    if(instant) el.classList.add('noanim');
+    slides.forEach(function(x,j){
+      x.classList.toggle('active',j===i);
+      if(j!==i) x.querySelectorAll('video').forEach(function(v){ v.pause(); });
+    });
+    for(var k=1;k<=6;k++) el.classList.toggle('s'+k,k<=s);
+    el.setAttribute('data-step',s);
+    var h=hooks[el.getAttribute('data-hook')]; if(h) h(el,s,instant);
+    if(instant){ void el.offsetWidth; requestAnimationFrame(function(){ el.classList.remove('noanim'); }); }
+    si=i; st=s; ui();
+  }
+  function next(){ if(st<steps(si)) show(si,st+1); else if(si<slides.length-1) show(si+1,0,true); }
+  function prev(){ if(st>0) show(si,st-1,true); else if(si>0) show(si-1,steps(si-1),true); }
+
+  var notes=document.getElementById('notes'), pos=document.getElementById('pos'), prog=document.getElementById('prog');
+  function ui(){
+    pos.textContent=(si+1)+' / '+slides.length;
+    var total=0, done=0; slides.forEach(function(x,j){ var n=steps(j)+1; total+=n; if(j<si) done+=n; }); done+=st+1;
+    prog.style.width=(done/total*100)+'%';
+    var t=slides[si].getAttribute('data-notes')||'';
+    notes.innerHTML=t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/\[([^\]]+)\]/g,'<b>[$1]</b>');
+    try{ history.replaceState(null,'','#s'+(si+1)); }catch(e){}
+  }
+  function toggleNotes(){ notes.hidden=!notes.hidden; }
+  function full(){
+    var d=document;
+    try{
+      if(!d.fullscreenElement){ var p=d.documentElement.requestFullscreen&&d.documentElement.requestFullscreen(); if(p&&p.catch) p.catch(function(){}); }
+      else { var q=d.exitFullscreen(); if(q&&q.catch) q.catch(function(){}); }
+    }catch(e){}
+  }
+
+  document.addEventListener('keydown',function(e){
+    var k=e.key;
+    if(k==='ArrowRight'||k==='PageDown'||k===' '||k==='Enter'||k==='ArrowDown'){ e.preventDefault(); next(); }
+    else if(k==='ArrowLeft'||k==='PageUp'||k==='Backspace'||k==='ArrowUp'){ e.preventDefault(); prev(); }
+    else if(k==='Home'){ show(0,0,true); }
+    else if(k==='End'){ show(slides.length-1,steps(slides.length-1),true); }
+    else if(k==='f'||k==='F'){ full(); }
+    else if(k==='n'||k==='N'){ toggleNotes(); }
+  });
+  document.getElementById('app').addEventListener('click',function(){ next(); });
+  document.getElementById('bNext').addEventListener('click',function(e){ e.stopPropagation(); next(); });
+  document.getElementById('bPrev').addEventListener('click',function(e){ e.stopPropagation(); prev(); });
+  document.getElementById('bNotes').addEventListener('click',function(e){ e.stopPropagation(); toggleNotes(); });
+  document.getElementById('bFull').addEventListener('click',function(e){ e.stopPropagation(); full(); });
+  notes.addEventListener('click',function(e){ e.stopPropagation(); });
+
+  var start=0, m=/^#s(\d+)$/.exec(location.hash||'');
+  if(m) start=Math.max(0,Math.min(slides.length-1,(+m[1])-1));
+  show(start,0,true);
+  setTimeout(function(){ var h=document.getElementById('hint'); h.style.opacity='0'; setTimeout(function(){ h.hidden=true; },900); },5000);
+})();
+</script>
+</body></html>
